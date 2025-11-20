@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.port || 3000;
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
 app.use(cors());
@@ -35,20 +35,37 @@ async function run() {
       const query = {};
 
       // destructure from query
-      const {email} = req.query;
-
-      if(email){
-        query.senderEmail = email
+      const { email } = req.query;
+      if (email) {
+        query.senderEmail = email;
       }
 
-      const cursor = parcelCollections.find(query);
+      const options = {
+        sort: {
+          CreatedAt: -1,
+        },
+      };
+
+      const cursor = parcelCollections.find(query, options);
       const result = await cursor.toArray();
       res.send(result);
     });
 
     app.post("/parcels", async (req, res) => {
       const parcel = req.body;
+
+      // parcel created time
+      parcel.CreatedAt = new Date();
+
       const result = await parcelCollections.insertOne(parcel);
+      res.send(result);
+    });
+
+    app.delete("/parcels/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await parcelCollections.deleteOne(query);
       res.send(result);
     });
     /* parcel related api end */
